@@ -1,0 +1,44 @@
+name: Run Robot Framework Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  Run Robot Framework Tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Dependencies
+        run: |
+          pip install robotframework
+
+      - name: Run test.robot
+        run: |
+          robot \
+            --outputdir results \
+            --output output.xml \
+            --log log.html \
+            --report report.html \
+            test.robot
+
+      - name: Send notification
+        if: always()
+        run: echo "Tests completed with status ${{ job.status }}"
+
+      - name: Upload Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-results
+          path: results/

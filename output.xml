@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.0 (Python 3.12.1 on darwin)" generated="2026-03-18T16:17:42.312850" rpa="false" schemaversion="5">
+<suite id="s1" name="Test" source="/Users/yffoaz/Desktop/CICD/CICD_ROBOT/CICD_ROBOT/test.robot">
+<test id="s1-t1" name="Test" line="5">
+<kw name="Log" owner="BuiltIn">
+<msg time="2026-03-18T16:17:42.321453" level="INFO">Hello world</msg>
+<arg>Hello world</arg>
+<arg>console=True</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2026-03-18T16:17:42.321368" elapsed="0.000117"/>
+</kw>
+<status status="PASS" start="2026-03-18T16:17:42.321152" elapsed="0.000396"/>
+</test>
+<doc>Hello World Test Suite</doc>
+<status status="PASS" start="2026-03-18T16:17:42.313709" elapsed="0.007977"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat pass="1" fail="0" skip="0" id="s1" name="Test">Test</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
