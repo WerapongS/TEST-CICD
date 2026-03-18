@@ -7,7 +7,8 @@ on:
     branches: [ main ]
 
 jobs:
-  Run Robot Framework Tests:
+  run-robot-framework-tests:        
+    name: Run Robot Framework Tests
     runs-on: windows-latest
 
     steps:
