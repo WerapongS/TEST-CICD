@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  run-robot-framework-tests:        
+  run-robot-framework-tests:
     name: Run Robot Framework Tests
     runs-on: windows-latest
 
@@ -21,17 +21,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install Dependencies
-        run: |
-          pip install robotframework
+        run: pip install robotframework
 
       - name: Run test.robot
-        run: |
-          robot \
-            --outputdir results \
-            --output output.xml \
-            --log log.html \
-            --report report.html \
-            test.robot
+        run: robot --outputdir results --output output.xml --log log.html --report report.html test.robot
 
       - name: Send notification
         if: always()
