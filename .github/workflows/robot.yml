@@ -80,55 +80,35 @@ jobs:
           failed    = os.environ.get("FAILED", "0")
           total     = os.environ.get("TOTAL",  "0")
 
-          is_success = status == "success"
-          theme_color = "2DC653" if is_success else "E8284A"
-          status_badge = "PASSED" if is_success else "FAILED"
-          status_icon  = "(tick)" if is_success else "(cross)"
-          header_emoji = "v" if is_success else "x"
+          is_success   = status == "success"
+          theme_color  = "2DC653" if is_success else "E8284A"
+          status_badge = "\u2705  PASSED" if is_success else "\u274C  FAILED"
+          footer_text  = "\U0001F389  All tests passed successfully!" if is_success else "\U0001F6A8  Some tests failed! Please check the logs."
 
-          passed_display = "(tick)  " + passed
-          failed_display = ("(cross)  " + failed) if int(failed) > 0 else "(minus)  " + failed
+          passed_display = "\u2705  " + passed
+          failed_display = ("\u274C  " + failed) if int(failed) > 0 else "\u2796  " + failed
 
           payload = {
             "@type": "MessageCard",
             "@context": "http://schema.org/extensions",
             "themeColor": theme_color,
-            "summary": "Robot Framework - " + status_badge,
+            "summary": "Robot Framework Test Results",
             "sections": [
               {
-                "activityTitle": "## Robot Framework Test Results",
+                "activityTitle": "Robot Framework Test Results",
                 "activitySubtitle": "**" + repo + "** | Branch: `" + branch + "`",
-                "activityImage": "https://robotframework.org/img/RF.svg",
                 "facts": [
-                  {
-                    "name": "Result",
-                    "value": "**" + status_icon + "  " + status_badge + "**"
-                  },
-                  {
-                    "name": "Total Tests",
-                    "value": "**" + total + "**"
-                  },
-                  {
-                    "name": "Passed",
-                    "value": passed_display
-                  },
-                  {
-                    "name": "Failed",
-                    "value": failed_display
-                  },
-                  {
-                    "name": "Branch",
-                    "value": "`" + branch + "`"
-                  },
-                  {
-                    "name": "Triggered by",
-                    "value": actor
-                  }
+                  { "name": "Result",       "value": "**" + status_badge + "**" },
+                  { "name": "Total Tests",  "value": "**" + total + "**" },
+                  { "name": "Passed",       "value": passed_display },
+                  { "name": "Failed",       "value": failed_display },
+                  { "name": "Branch",       "value": "`" + branch + "`" },
+                  { "name": "Triggered by", "value": actor }
                 ],
                 "markdown": True
               },
               {
-                "text": ("**All tests passed successfully!**" if is_success else "**Some tests failed! Please check the logs.**")
+                "text": "**" + footer_text + "**"
               }
             ],
             "potentialAction": [
