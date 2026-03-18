@@ -26,30 +26,61 @@ jobs:
       - name: Run test.robot
         run: robot --outputdir results --output output.xml --log log.html --report report.html test.robot
 
+      - name: Parse Robot Results
+        if: always()
+        id: parse
+        shell: python
+        run: |
+          import xml.etree.ElementTree as ET
+          import os
+
+          try:
+            tree   = ET.parse("results/output.xml")
+            root   = tree.getroot()
+            stats  = root.find(".//total/stat")
+            passed = stats.get("pass", "0")
+            failed = stats.get("fail", "0")
+            total  = str(int(passed) + int(failed))
+          except:
+            passed = "0"
+            failed = "0"
+            total  = "0"
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+            f.write("passed=" + passed + "\n")
+            f.write("failed=" + failed + "\n")
+            f.write("total="  + total  + "\n")
+
       - name: Send Teams Notification
         if: always()
         shell: python
         env:
-          TEAMS_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          TEAMS_URL:  ${{ secrets.TEAMS_WEBHOOK_URL }}
           JOB_STATUS: ${{ job.status }}
-          REPO: ${{ github.repository }}
-          BRANCH: ${{ github.ref_name }}
-          ACTOR: ${{ github.actor }}
-          RUN_ID: ${{ github.run_id }}
+          REPO:       ${{ github.repository }}
+          BRANCH:     ${{ github.ref_name }}
+          ACTOR:      ${{ github.actor }}
+          RUN_ID:     ${{ github.run_id }}
           SERVER_URL: ${{ github.server_url }}
+          PASSED:     ${{ steps.parse.outputs.passed }}
+          FAILED:     ${{ steps.parse.outputs.failed }}
+          TOTAL:      ${{ steps.parse.outputs.total }}
         run: |
           import urllib.request
           import json
           import os
 
-          status   = os.environ["JOB_STATUS"]
-          repo     = os.environ["REPO"]
-          branch   = os.environ["BRANCH"]
-          actor    = os.environ["ACTOR"]
-          run_url  = os.environ["SERVER_URL"] + "/" + repo + "/actions/runs/" + os.environ["RUN_ID"]
+          status    = os.environ["JOB_STATUS"]
+          repo      = os.environ["REPO"]
+          branch    = os.environ["BRANCH"]
+          actor     = os.environ["ACTOR"]
+          run_url   = os.environ["SERVER_URL"] + "/" + repo + "/actions/runs/" + os.environ["RUN_ID"]
           teams_url = os.environ["TEAMS_URL"]
-          icon     = "OK" if status == "success" else "FAIL"
-          color    = "00FF00" if status == "success" else "FF0000"
+          passed    = os.environ.get("PASSED", "0")
+          failed    = os.environ.get("FAILED", "0")
+          total     = os.environ.get("TOTAL",  "0")
+          icon      = "OK" if status == "success" else "FAIL"
+          color     = "00FF00" if status == "success" else "FF0000"
 
           payload = {
             "@type": "MessageCard",
@@ -61,6 +92,9 @@ jobs:
               "activitySubtitle": "Repository: " + repo,
               "facts": [
                 { "name": "Status",       "value": icon + " " + status.capitalize() },
+                { "name": "Total",        "value": total },
+                { "name": "Passed",       "value": passed },
+                { "name": "Failed",       "value": failed },
                 { "name": "Branch",       "value": branch },
                 { "name": "Triggered by", "value": actor }
               ]
