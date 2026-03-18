@@ -24,29 +24,7 @@ jobs:
         run: pip install robotframework
 
       - name: Run test.robot
-        id: robot
         run: robot --outputdir results --output output.xml --log log.html --report report.html test.robot
-
-      - name: Parse Robot Results
-        if: always()
-        id: parse
-        shell: python
-        run: |
-          import xml.etree.ElementTree as ET
-          import os
-
-          tree = ET.parse('results/output.xml')
-          root = tree.getroot()
-          stats = root.find('.//total/stat')
-
-          passed = stats.get('pass', '0')
-          failed = stats.get('fail', '0')
-          total = str(int(passed) + int(failed))
-
-          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
-              f.write(f"passed={passed}\n")
-              f.write(f"failed={failed}\n")
-              f.write(f"total={total}\n")
 
       - name: Send Teams Notification
         if: always()
@@ -54,36 +32,27 @@ jobs:
         run: |
           import urllib.request
           import json
-          import os
 
-          status     = "${{ job.status }}"
-          passed     = "${{ steps.parse.outputs.passed }}"
-          failed     = "${{ steps.parse.outputs.failed }}"
-          total      = "${{ steps.parse.outputs.total }}"
-          repo       = "${{ github.repository }}"
-          branch     = "${{ github.ref_name }}"
-          commit     = "${{ github.sha }}"
-          actor      = "${{ github.actor }}"
-          run_url    = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          status_icon = "✅" if status == "success" else "❌"
+          status  = "${{ job.status }}"
+          repo    = "${{ github.repository }}"
+          branch  = "${{ github.ref_name }}"
+          actor   = "${{ github.actor }}"
+          run_url = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          icon    = "OK" if status == "success" else "FAIL"
+          color   = "00FF00" if status == "success" else "FF0000"
 
           payload = {
             "@type": "MessageCard",
             "@context": "http://schema.org/extensions",
-            "themeColor": "00FF00" if status == "success" else "FF0000",
+            "themeColor": color,
             "summary": "Robot Framework Test Results",
             "sections": [{
-              "activityTitle": f"🤖 Robot Framework - Hello World Test",
-              "activitySubtitle": f"Repository: {repo}",
+              "activityTitle": "Robot Framework - Hello World Test",
+              "activitySubtitle": "Repository: " + repo,
               "facts": [
-                { "name": "Status",      "value": f"{status_icon} {status.capitalize()}" },
-                { "name": "Total",       "value": total },
-                { "name": "✅ Passed",   "value": passed },
-                { "name": "❌ Failed",   "value": failed },
-                { "name": "Branch",      "value": branch },
-                { "name": "Commit",      "value": commit[:7] },
-                { "name": "Triggered by","value": actor }
+                { "name": "Status",       "value": icon + " " + status.capitalize() },
+                { "name": "Branch",       "value": branch },
+                { "name": "Triggered by", "value": actor }
               ]
             }],
             "potentialAction": [{
@@ -93,11 +62,11 @@ jobs:
             }]
           }
 
-          data = json.dumps(payload).encode('utf-8')
+          data = json.dumps(payload).encode("utf-8")
           req  = urllib.request.Request(
-              "${{ secrets.TEAMS_WEBHOOK_URL }}",
-              data=data,
-              headers={'Content-Type': 'application/json'}
+            "${{ secrets.TEAMS_WEBHOOK_URL }}",
+            data=data,
+            headers={"Content-Type": "application/json"}
           )
           urllib.request.urlopen(req)
 
