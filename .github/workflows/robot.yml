@@ -1,4 +1,4 @@
-name: Run Robot Framework Tests
+name: Run Robot to Microsoft Teams
 
 on:
   push:
@@ -24,11 +24,82 @@ jobs:
         run: pip install robotframework
 
       - name: Run test.robot
+        id: robot
         run: robot --outputdir results --output output.xml --log log.html --report report.html test.robot
 
-      - name: Send notification
+      - name: Parse Robot Results
         if: always()
-        run: echo "Tests completed with status ${{ job.status }}"
+        id: parse
+        shell: python
+        run: |
+          import xml.etree.ElementTree as ET
+          import os
+
+          tree = ET.parse('results/output.xml')
+          root = tree.getroot()
+          stats = root.find('.//total/stat')
+
+          passed = stats.get('pass', '0')
+          failed = stats.get('fail', '0')
+          total = str(int(passed) + int(failed))
+
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as f:
+              f.write(f"passed={passed}\n")
+              f.write(f"failed={failed}\n")
+              f.write(f"total={total}\n")
+
+      - name: Send Teams Notification
+        if: always()
+        shell: python
+        run: |
+          import urllib.request
+          import json
+          import os
+
+          status     = "${{ job.status }}"
+          passed     = "${{ steps.parse.outputs.passed }}"
+          failed     = "${{ steps.parse.outputs.failed }}"
+          total      = "${{ steps.parse.outputs.total }}"
+          repo       = "${{ github.repository }}"
+          branch     = "${{ github.ref_name }}"
+          commit     = "${{ github.sha }}"
+          actor      = "${{ github.actor }}"
+          run_url    = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+          status_icon = "✅" if status == "success" else "❌"
+
+          payload = {
+            "@type": "MessageCard",
+            "@context": "http://schema.org/extensions",
+            "themeColor": "00FF00" if status == "success" else "FF0000",
+            "summary": "Robot Framework Test Results",
+            "sections": [{
+              "activityTitle": f"🤖 Robot Framework - Hello World Test",
+              "activitySubtitle": f"Repository: {repo}",
+              "facts": [
+                { "name": "Status",      "value": f"{status_icon} {status.capitalize()}" },
+                { "name": "Total",       "value": total },
+                { "name": "✅ Passed",   "value": passed },
+                { "name": "❌ Failed",   "value": failed },
+                { "name": "Branch",      "value": branch },
+                { "name": "Commit",      "value": commit[:7] },
+                { "name": "Triggered by","value": actor }
+              ]
+            }],
+            "potentialAction": [{
+              "@type": "OpenUri",
+              "name": "View Run",
+              "targets": [{ "os": "default", "uri": run_url }]
+            }]
+          }
+
+          data = json.dumps(payload).encode('utf-8')
+          req  = urllib.request.Request(
+              "${{ secrets.TEAMS_WEBHOOK_URL }}",
+              data=data,
+              headers={'Content-Type': 'application/json'}
+          )
+          urllib.request.urlopen(req)
 
       - name: Upload Results
         if: always()
