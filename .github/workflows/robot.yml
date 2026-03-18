@@ -29,17 +29,27 @@ jobs:
       - name: Send Teams Notification
         if: always()
         shell: python
+        env:
+          TEAMS_URL: ${{ secrets.TEAMS_WEBHOOK_URL }}
+          JOB_STATUS: ${{ job.status }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ github.ref_name }}
+          ACTOR: ${{ github.actor }}
+          RUN_ID: ${{ github.run_id }}
+          SERVER_URL: ${{ github.server_url }}
         run: |
           import urllib.request
           import json
+          import os
 
-          status  = "${{ job.status }}"
-          repo    = "${{ github.repository }}"
-          branch  = "${{ github.ref_name }}"
-          actor   = "${{ github.actor }}"
-          run_url = "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          icon    = "OK" if status == "success" else "FAIL"
-          color   = "00FF00" if status == "success" else "FF0000"
+          status   = os.environ["JOB_STATUS"]
+          repo     = os.environ["REPO"]
+          branch   = os.environ["BRANCH"]
+          actor    = os.environ["ACTOR"]
+          run_url  = os.environ["SERVER_URL"] + "/" + repo + "/actions/runs/" + os.environ["RUN_ID"]
+          teams_url = os.environ["TEAMS_URL"]
+          icon     = "OK" if status == "success" else "FAIL"
+          color    = "00FF00" if status == "success" else "FF0000"
 
           payload = {
             "@type": "MessageCard",
@@ -64,7 +74,7 @@ jobs:
 
           data = json.dumps(payload).encode("utf-8")
           req  = urllib.request.Request(
-            "${{ secrets.TEAMS_WEBHOOK_URL }}",
+            teams_url,
             data=data,
             headers={"Content-Type": "application/json"}
           )
