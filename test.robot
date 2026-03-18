@@ -2,5 +2,8 @@
 Documentation    Hello World Test Suite
 
 *** Test Cases ***
-Test
+Test Pass
     Log    Hello world    console=True
+
+Test Fail
+    Fail    This test is expected to fail
