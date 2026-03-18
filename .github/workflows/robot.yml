@@ -2,7 +2,7 @@ name: Run Robot to Microsoft Teams
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main]
   pull_request:
     branches: [ main ]
 
@@ -79,31 +79,70 @@ jobs:
           passed    = os.environ.get("PASSED", "0")
           failed    = os.environ.get("FAILED", "0")
           total     = os.environ.get("TOTAL",  "0")
-          icon      = "OK" if status == "success" else "FAIL"
-          color     = "00FF00" if status == "success" else "FF0000"
+
+          is_success = status == "success"
+          theme_color = "2DC653" if is_success else "E8284A"
+          status_badge = "PASSED" if is_success else "FAILED"
+          status_icon  = "(tick)" if is_success else "(cross)"
+          header_emoji = "v" if is_success else "x"
+
+          passed_display = "(tick)  " + passed
+          failed_display = ("(cross)  " + failed) if int(failed) > 0 else "(minus)  " + failed
 
           payload = {
             "@type": "MessageCard",
             "@context": "http://schema.org/extensions",
-            "themeColor": color,
-            "summary": "Robot Framework Test Results",
-            "sections": [{
-              "activityTitle": "Robot Framework - Hello World Test",
-              "activitySubtitle": "Repository: " + repo,
-              "facts": [
-                { "name": "Status",       "value": icon + " " + status.capitalize() },
-                { "name": "Total",        "value": total },
-                { "name": "Passed",       "value": passed },
-                { "name": "Failed",       "value": failed },
-                { "name": "Branch",       "value": branch },
-                { "name": "Triggered by", "value": actor }
-              ]
-            }],
-            "potentialAction": [{
-              "@type": "OpenUri",
-              "name": "View Run",
-              "targets": [{ "os": "default", "uri": run_url }]
-            }]
+            "themeColor": theme_color,
+            "summary": "Robot Framework - " + status_badge,
+            "sections": [
+              {
+                "activityTitle": "## Robot Framework Test Results",
+                "activitySubtitle": "**" + repo + "** | Branch: `" + branch + "`",
+                "activityImage": "https://robotframework.org/img/RF.svg",
+                "facts": [
+                  {
+                    "name": "Result",
+                    "value": "**" + status_icon + "  " + status_badge + "**"
+                  },
+                  {
+                    "name": "Total Tests",
+                    "value": "**" + total + "**"
+                  },
+                  {
+                    "name": "Passed",
+                    "value": passed_display
+                  },
+                  {
+                    "name": "Failed",
+                    "value": failed_display
+                  },
+                  {
+                    "name": "Branch",
+                    "value": "`" + branch + "`"
+                  },
+                  {
+                    "name": "Triggered by",
+                    "value": actor
+                  }
+                ],
+                "markdown": True
+              },
+              {
+                "text": ("**All tests passed successfully!**" if is_success else "**Some tests failed! Please check the logs.**")
+              }
+            ],
+            "potentialAction": [
+              {
+                "@type": "OpenUri",
+                "name": "View Run Details",
+                "targets": [{ "os": "default", "uri": run_url }]
+              },
+              {
+                "@type": "OpenUri",
+                "name": "View Repository",
+                "targets": [{ "os": "default", "uri": "https://github.com/" + repo }]
+              }
+            ]
           }
 
           data = json.dumps(payload).encode("utf-8")
